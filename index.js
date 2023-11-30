@@ -78,6 +78,64 @@ app
     }
   });
 
+app.post(
+  "/api/users/:_id/exercises",
+  bodyParser.urlencoded({ extended: false }),
+  async (req, res) => {
+    const id = req.body.userId;
+    const description = req.body.description;
+    const duration = req.body.duration;
+    let date = req.body.date;
+    date = date === "" ? Date().now : date;
+    const dbDateObject = new Date(date);
+    let dbDate = dbDateObject.toDateString();
+
+    const dbUser = await findUserById(id);
+    if (!dbUser) {
+      res.json({ error: "User not found" });
+      res.statusCode = 404;
+    } else {
+      const userExercise = new Exercise({
+        username: dbUser.username,
+        description,
+        duration,
+        date: dbDate,
+      });
+      userExercise.save();
+      res.json(userExercise);
+      res.statusCode = 201;
+    }
+  }
+);
+
+app.get("/api/users/:_id/logs", async (req, res) => {
+  const id = req.params._id;
+  const dbUser = await findUserById(id);
+  if (!dbUser) {
+    res.json({ error: "User not found" });
+  } else {
+    const dbUserExercises = await findUserExercises(
+      dbUser.username,
+      "description duration date -_id"
+    );
+    // let userExercises = [];
+    // if (dbUserExercises.length) {
+    //   const userExercises = dbUserExercises.map((dbExercise) => {
+    //     return {
+    //       description: dbExercise.description,
+    //       duration: dbExercise.duration,
+    //       date: dbExercise.date,
+    //     };
+    //   });
+    // }
+    res.json({
+      count: dbUserExercises.length,
+      log: dbUserExercises,
+    });
+    res.statusCode = 200;
+  }
+});
+
 const findUser = (username) => {
   try {
     return User.findOne({ username });
@@ -86,9 +144,25 @@ const findUser = (username) => {
   }
 };
 
+const findUserById = (id) => {
+  try {
+    return User.findById(id);
+  } catch (error) {
+    console.log(error);
+  }
+};
+
 const findAllUsers = () => {
   try {
     return User.find({});
+  } catch (error) {
+    console.log(error);
+  }
+};
+
+const findUserExercises = (username, fieldsString = "") => {
+  try {
+    return Exercise.find({ username }, fieldsString).exec();
   } catch (error) {
     console.log(error);
   }
