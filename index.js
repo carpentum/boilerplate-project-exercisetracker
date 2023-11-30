@@ -121,19 +121,19 @@ app.get("/api/users/:_id/logs", async (req, res) => {
       dbUser.username,
       "description duration date -_id"
     );
-    // let userExercises = [];
-    // if (dbUserExercises.length) {
-    //   const userExercises = dbUserExercises.map((dbExercise) => {
-    //     return {
-    //       description: dbExercise.description,
-    //       duration: dbExercise.duration,
-    //       date: dbExercise.date,
-    //     };
-    //   });
-    // }
+    let userExercises = [];
+    if (dbUserExercises.length) {
+      userExercises = dbUserExercises.map((dbExercise) => {
+        return {
+          description: dbExercise.description,
+          duration: dbExercise.duration,
+          date: dbExercise.date,
+        };
+      });
+    }
     res.json({
       count: dbUserExercises.length,
-      log: dbUserExercises,
+      log: userExercises,
     });
     res.statusCode = 200;
   }
