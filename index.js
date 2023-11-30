@@ -102,10 +102,14 @@ app.post(
         date: dbDate,
       });
       userExercise.save();
-      dbUser.description = userExercise.description;
-      dbUser.duration = userExercise.duration;
-      dbUser.date = userExercise.date;
-      res.json(dbUser);
+      const resObject = {
+        username: dbUser.username,
+        _id: dbUser._id,
+        description: userExercise.description,
+        duration: userExercise.duration,
+        date: userExercise.date,
+      };
+      res.json(resObject);
       res.statusCode = 201;
     }
   }
