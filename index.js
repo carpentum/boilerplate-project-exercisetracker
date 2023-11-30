@@ -102,7 +102,10 @@ app.post(
         date: dbDate,
       });
       userExercise.save();
-      res.json(userExercise);
+      dbUser.description = userExercise.description;
+      dbUser.duration = userExercise.duration;
+      dbUser.date = userExercise.date;
+      res.json(dbUser);
       res.statusCode = 201;
     }
   }
