@@ -90,8 +90,16 @@ app.post(
       });
       dbUser.log.push(userLog);
       dbUser.save();
-      res.json(dbUser);
-      res.statusCode = 201;
+      //   res.json(dbUser);
+      //   res.statusCode = 201;
+
+      let responseObject = {};
+      responseObject["_id"] = dbUser.id;
+      responseObject["username"] = dbUser.username;
+      responseObject["date"] = dbUser.date;
+      responseObject["description"] = dbUser.description;
+      responseObject["duration"] = dbUser.duration;
+      response.json(responseObject);
     }
   }
 );
