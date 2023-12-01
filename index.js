@@ -161,7 +161,6 @@ const findAllUsers = () => {
 
 const filterLogs = (dbUserLog, from, to, limit) => {
   try {
-    let logsFiltered = [];
     let logsFrom = [];
     let logsTo = [];
     if (from) {
@@ -178,11 +177,12 @@ const filterLogs = (dbUserLog, from, to, limit) => {
         return logDate <= toDate;
       });
     }
-    logsFiltered =
-      logsTo.length && parseInt(limit) !== false
-        ? logsTo.slice(0, parseInt(limit))
-        : logsTo;
-    return logsFiltered;
+    return logsTo.length &&
+      limit &&
+      parseInt(limit) !== 0 &&
+      parseInt(limit) !== "NaN"
+      ? logsTo.slice(0, parseInt(limit))
+      : logsTo;
   } catch (error) {
     console.log(error);
   }
