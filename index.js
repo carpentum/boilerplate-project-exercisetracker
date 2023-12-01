@@ -96,9 +96,9 @@ app.post(
       let responseObject = {};
       responseObject["_id"] = dbUser.id;
       responseObject["username"] = dbUser.username;
-      responseObject["date"] = dbUser.date;
-      responseObject["description"] = dbUser.description;
-      responseObject["duration"] = dbUser.duration;
+      responseObject["date"] = dbDate;
+      responseObject["description"] = description;
+      responseObject["duration"] = duration;
       res.json(responseObject);
     }
   }
