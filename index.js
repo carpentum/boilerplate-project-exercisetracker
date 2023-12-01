@@ -16,35 +16,23 @@ require("dotenv").config();
     });
 })();
 
-const ExerciseSchema = new mongoose.Schema({
-  username: String,
+const LogSchema = new mongoose.Schema({
   description: String,
   duration: Number,
   date: String,
 });
 
-const Exercise = mongoose.model("Exercise", ExerciseSchema);
+const Log = mongoose.model("Log", LogSchema);
 
 const UserSchema = new mongoose.Schema({
   username: {
     require: true,
     type: String,
   },
+  log: [LogSchema],
 });
 
 const User = mongoose.model("User", UserSchema);
-
-const LogSchema = new mongoose.Schema({
-  username: String,
-  count: Number,
-  log: {
-    description: String,
-    duration: Number,
-    date: String,
-  },
-});
-
-const Log = mongoose.model("Log", LogSchema);
 
 app.use(cors());
 app.use(express.static("public"));
@@ -95,21 +83,14 @@ app.post(
       res.json({ error: "User not found" });
       res.statusCode = 404;
     } else {
-      const userExercise = new Exercise({
-        username: dbUser.username,
+      const userLog = new Log({
         description,
         duration,
         date: dbDate,
       });
-      userExercise.save();
-      const resObject = {
-        username: dbUser.username,
-        _id: dbUser._id,
-        description: userExercise.description,
-        duration: userExercise.duration,
-        date: userExercise.date,
-      };
-      res.json(resObject);
+      dbUser.log.push(userLog);
+      dbUser.save();
+      res.json(dbUser);
       res.statusCode = 201;
     }
   }
@@ -121,25 +102,28 @@ app.get("/api/users/:_id/logs", async (req, res) => {
   if (!dbUser) {
     res.json({ error: "User not found" });
   } else {
-    const dbUserExercises = await findUserExercises(
-      dbUser.username,
-      "description duration date -_id"
-    );
-    let userExercises = [];
-    if (dbUserExercises.length) {
-      userExercises = dbUserExercises.map((dbExercise) => {
-        return {
-          description: dbExercise.description,
-          duration: dbExercise.duration,
-          date: dbExercise.date,
-        };
-      });
+    const from = req.query.from ? req.query.from : undefined;
+    const to = req.query.to ? req.query.to : undefined;
+    if (from && isNaN(new Date(from))) {
+      res.json({ error: "From date is invalid" });
+    } else if (to && isNaN(new Date(to))) {
+      res.json({ error: "To date is invalid" });
+    } else {
+      if (from && to && new Date(from) > new Date(to)) {
+        res.json({ error: "From date is higher than to date" });
+      } else {
+        const limit = req.query.limit ? req.query.limit : undefined;
+        let log =
+          from || to || limit
+            ? filterLogs(dbUser.log, from, to, limit)
+            : dbUser.log;
+        res.json({
+          count: log.length,
+          log,
+        });
+        res.statusCode = 200;
+      }
     }
-    res.json({
-      count: dbUserExercises.length,
-      log: userExercises,
-    });
-    res.statusCode = 200;
   }
 });
 
@@ -167,9 +151,30 @@ const findAllUsers = () => {
   }
 };
 
-const findUserExercises = (username, fieldsString = "") => {
+const filterLogs = (dbUserLog, from, to, limit) => {
   try {
-    return Exercise.find({ username }, fieldsString).exec();
+    let logsFiltered = [];
+    let logsFrom = [];
+    let logsTo = [];
+    if (from) {
+      const fromDate = new Date(from);
+      logsFrom = dbUserLog.filter((log) => {
+        const logDate = new Date(log.date);
+        return logDate >= fromDate;
+      });
+    }
+    if (to && logsFrom.length) {
+      const toDate = new Date(to);
+      logsTo = logsFrom.filter((log) => {
+        const logDate = new Date(log.date);
+        return logDate <= toDate;
+      });
+    }
+    logsFiltered =
+      logsTo.length && parseInt(limit) !== false
+        ? logsTo.slice(0, parseInt(limit))
+        : logsTo;
+    return logsFiltered;
   } catch (error) {
     console.log(error);
   }
