@@ -99,7 +99,7 @@ app.post(
       responseObject["date"] = dbUser.date;
       responseObject["description"] = dbUser.description;
       responseObject["duration"] = dbUser.duration;
-      response.json(responseObject);
+      res.json(responseObject);
     }
   }
 );
