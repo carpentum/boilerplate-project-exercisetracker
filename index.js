@@ -44,12 +44,9 @@ app
   .route("/api/users")
   .get(async (req, res) => {
     const allUsers = await findAllUsers();
-    if (allUsers.length > 0) {
-      res.json(allUsers);
-    } else {
-      res.json({ message: "No users found" });
-    }
-    res.statusCode = 200;
+    if (allUsers.length > 0) return res.status(200).json(allUsers);
+
+    res.status(200).json({ message: "No users found" });
   })
   .post(bodyParser.urlencoded({ extended: false }), async (req, res) => {
     const username = req.body.username;
@@ -79,60 +76,52 @@ app.post(
     let dbDate = dbDateObject.toDateString();
 
     const dbUser = await findUserById(id);
-    if (!dbUser) {
-      res.json({ error: "User not found" });
-      res.statusCode = 404;
-    } else {
-      const userLog = new Log({
-        description,
-        duration,
-        date: dbDate,
-      });
-      dbUser.log.push(userLog);
-      dbUser.save();
-      //   res.json(dbUser);
-      //   res.statusCode = 201;
+    if (!dbUser) return res.status(404).json({ error: "User not found" });
 
-      let responseObject = {};
-      responseObject["_id"] = dbUser.id;
-      responseObject["username"] = dbUser.username;
-      responseObject["date"] = dbDate;
-      responseObject["description"] = description;
-      responseObject["duration"] = duration;
-      res.json(responseObject);
-    }
+    const userLog = new Log({
+      description,
+      duration,
+      date: dbDate,
+    });
+    dbUser.log.push(userLog);
+    dbUser.save();
+    //   res.json(dbUser);
+    //   res.statusCode = 201;
+
+    let responseObject = {};
+    responseObject["_id"] = dbUser.id;
+    responseObject["username"] = dbUser.username;
+    responseObject["date"] = dbDate;
+    responseObject["description"] = description;
+    responseObject["duration"] = duration;
+    res.status(200).json(responseObject);
   }
 );
 
 app.get("/api/users/:_id/logs", async (req, res) => {
   const id = req.params._id;
   const dbUser = await findUserById(id);
-  if (!dbUser) {
-    res.json({ error: "User not found" });
-  } else {
-    const from = req.query.from ? req.query.from : undefined;
-    const to = req.query.to ? req.query.to : undefined;
-    if (from && isNaN(new Date(from))) {
-      res.json({ error: "From date is invalid" });
-    } else if (to && isNaN(new Date(to))) {
-      res.json({ error: "To date is invalid" });
-    } else {
-      if (from && to && new Date(from) > new Date(to)) {
-        res.json({ error: "From date is higher than to date" });
-      } else {
-        const limit = req.query.limit ? req.query.limit : undefined;
-        let log =
-          from || to || limit
-            ? filterLogs(dbUser.log, from, to, limit)
-            : dbUser.log;
-        res.json({
-          count: log.length,
-          log,
-        });
-        res.statusCode = 200;
-      }
-    }
-  }
+  if (!dbUser) return res.status(400).json({ error: "User not found" });
+
+  const from = req.query.from ? req.query.from : undefined;
+  const to = req.query.to ? req.query.to : undefined;
+
+  if (from && isNaN(new Date(from)))
+    return res.status(400).json({ error: "From date is invalid" });
+
+  if (to && isNaN(new Date(to)))
+    return res.status(400).json({ error: "To date is invalid" });
+
+  if (from && to && new Date(from) > new Date(to))
+    return res.status(400).json({ error: "From date is higher than to date" });
+
+  const limit = req.query.limit ? req.query.limit : undefined;
+  let log =
+    from || to || limit ? filterLogs(dbUser.log, from, to, limit) : dbUser.log;
+  res.status(200).redirectjson({
+    count: log.length,
+    log,
+  });
 });
 
 const findUser = (username) => {
